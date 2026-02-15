@@ -1,35 +1,27 @@
 import os
 import yt_dlp
-from telegram import ReplyKeyboardMarkup, Update
+from telegram import Update, ReplyKeyboardMarkup
 from telegram.ext import Updater, CommandHandler, MessageHandler, Filters, CallbackContext
 
 TOKEN = os.getenv("BOT_TOKEN")
 
-updater = Updater(TOKEN, use_context=True)
-dp = updater.dispatcher
+# ===== MENU =====
+menu_keyboard = [
+    ["🎮 Special Mode", "📥 YouTube"],
+    ["🎵 Audio Extract", "🎬 OTT"],
+    ["🤖 AI Chat", "❓ Help"]
+]
+reply_markup = ReplyKeyboardMarkup(menu_keyboard, resize_keyboard=True)
 
-
-# ================= MENU =================
-def show_menu(update):
-    keyboard = [
-        ["🎮 Special Mode", "📥 YouTube"],
-        ["🎵 Audio Extract", "🎬 OTT"],
-        ["🤖 AI Chat", "❓ Help"]
-    ]
-    reply_markup = ReplyKeyboardMarkup(keyboard, resize_keyboard=True)
-    update.message.reply_text("🔥 Power Combo Bot\nSelect option:", reply_markup=reply_markup)
-
-
-# ================= START + GREETING =================
+# ===== START =====
 def start(update: Update, context: CallbackContext):
-    show_menu(update)
+    update.message.reply_text(
+        "🔥 Power Combo Bot Activated!\nUse menu below:",
+        reply_markup=reply_markup
+    )
 
-def greeting(update: Update, context: CallbackContext):
-    show_menu(update)
-
-
-# ================= BUTTON HANDLER =================
-def handle_buttons(update: Update, context: CallbackContext):
+# ===== MESSAGE HANDLER =====
+def handle_message(update: Update, context: CallbackContext):
     text = update.message.text
 
     if text == "🎮 Special Mode":
@@ -38,12 +30,10 @@ def handle_buttons(update: Update, context: CallbackContext):
         )
 
     elif text == "📥 YouTube":
-        context.user_data["mode"] = "youtube"
-        update.message.reply_text("📥 Send YouTube link.")
+        update.message.reply_text("📥 Send YouTube video link to download.")
 
     elif text == "🎵 Audio Extract":
-        context.user_data["mode"] = "audio"
-        update.message.reply_text("🎵 Send video file.")
+        update.message.reply_text("🎵 Send video link to extract audio.")
 
     elif text == "🎬 OTT":
         update.message.reply_text(
@@ -55,68 +45,49 @@ def handle_buttons(update: Update, context: CallbackContext):
         )
 
     elif text == "🤖 AI Chat":
-        context.user_data["mode"] = "ai"
-        update.message.reply_text("🤖 AI Mode Activated. Ask anything.")
+        update.message.reply_text("🤖 AI Mode Activated. (Demo mode)")
 
     elif text == "❓ Help":
         update.message.reply_text("👤 Developer: mr.divakar00")
 
-    else:
-        handle_modes(update, context)
-
-
-# ================= MODE LOGIC =================
-def handle_modes(update: Update, context: CallbackContext):
-    mode = context.user_data.get("mode")
-
-    # ===== AI MODE =====
-    if mode == "ai":
-        update.message.reply_text(f"🤖 AI: You said -> {update.message.text}")
-
-    # ===== YOUTUBE DOWNLOAD =====
-    elif mode == "youtube":
-        url = update.message.text
-        update.message.reply_text("⏳ Downloading...")
-        try:
-            ydl_opts = {
-                'format': 'best',
-                'outtmpl': 'video.%(ext)s'
-            }
-            with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-                ydl.download([url])
-
-            for file in os.listdir():
-                if file.startswith("video"):
-                    update.message.reply_video(open(file, "rb"))
-                    os.remove(file)
-                    break
-        except:
-            update.message.reply_text("❌ Download failed.")
+    elif "youtube.com" in text or "youtu.be" in text:
+        download_video(update, context, text)
 
     else:
         update.message.reply_text("Use menu buttons only.")
 
+# ===== YOUTUBE DOWNLOAD =====
+def download_video(update: Update, context: CallbackContext, url):
+    update.message.reply_text("⏳ Downloading...")
 
-# ================= AUDIO EXTRACT =================
-def audio_extract(update: Update, context: CallbackContext):
-    mode = context.user_data.get("mode")
-    if mode == "audio" and update.message.video:
-        file = update.message.video.get_file()
-        file.download("video.mp4")
+    ydl_opts = {
+        'format': 'best',
+        'outtmpl': 'video.%(ext)s'
+    }
 
-        os.system("ffmpeg -i video.mp4 -q:a 0 -map a audio.mp3")
+    try:
+        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+            ydl.download([url])
 
-        update.message.reply_audio(open("audio.mp3", "rb"))
+        for file in os.listdir():
+            if file.startswith("video"):
+                update.message.reply_video(open(file, 'rb'))
+                os.remove(file)
+                break
 
-        os.remove("video.mp4")
-        os.remove("audio.mp3")
+    except Exception as e:
+        update.message.reply_text("❌ Download failed.")
 
+# ===== MAIN =====
+def main():
+    updater = Updater(TOKEN, use_context=True)
+    dp = updater.dispatcher
 
-# ================= HANDLERS =================
-dp.add_handler(CommandHandler("start", start))
-dp.add_handler(MessageHandler(Filters.regex("^(hi|hello|hey|hii|Hi|Hello)$"), greeting))
-dp.add_handler(MessageHandler(Filters.video, audio_extract))
-dp.add_handler(MessageHandler(Filters.text & ~Filters.command, handle_buttons))
+    dp.add_handler(CommandHandler("start", start))
+    dp.add_handler(MessageHandler(Filters.text & ~Filters.command, handle_message))
 
-updater.start_polling()
-updater.idle()
+    updater.start_polling()
+    updater.idle()
+
+if __name__ == "__main__":
+    main()
