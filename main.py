@@ -2,7 +2,7 @@ import os
 from telegram import ReplyKeyboardMarkup, Update
 from telegram.ext import Updater, CommandHandler, MessageHandler, Filters, CallbackContext
 
-TOKEN = os.getenv("TOKEN")
+TOKEN = os.getenv("BOT_TOKEN")
 
 updater = Updater(TOKEN, use_context=True)
 dp = updater.dispatcher
