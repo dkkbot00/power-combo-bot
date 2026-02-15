@@ -1,149 +1,109 @@
 import os
 import random
-from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
-from telegram.ext import Updater, CommandHandler, CallbackQueryHandler, CallbackContext, MessageHandler, Filters
+from telegram import (
+    ReplyKeyboardMarkup,
+    InlineKeyboardMarkup,
+    InlineKeyboardButton,
+    WebAppInfo
+)
+from telegram.ext import Updater, CommandHandler, MessageHandler, Filters
 
-# =========================
-# TOKEN (Railway Variable)
-# =========================
 TOKEN = os.getenv("BOT_TOKEN")
 
 updater = Updater(TOKEN, use_context=True)
 dp = updater.dispatcher
 
 
-# =========================
-# START MENU
-# =========================
-def start(update: Update, context: CallbackContext):
-    keyboard = [
-        [InlineKeyboardButton("🎮 Game Zone", callback_data='game')],
-        [InlineKeyboardButton("📥 Downloader", callback_data='download')],
-        [InlineKeyboardButton("🎬 OTT Search", callback_data='ott')],
-        [InlineKeyboardButton("🤖 AI Mode", callback_data='ai')],
-        [InlineKeyboardButton("🌐 Special Mode", callback_data='special')],
-        [InlineKeyboardButton("❓ Help", callback_data='help')]
-    ]
+# ================= MAIN MENU =================
 
-    reply_markup = InlineKeyboardMarkup(keyboard)
+def main_menu():
+    keyboard = [
+        ["🎮 Special Mode"],
+        ["📥 YouTube", "🎵 Audio Extract"],
+        ["🎬 OTT Links"],
+        ["🤖 AI Chat"],
+        ["❓ Help"]
+    ]
+    return ReplyKeyboardMarkup(keyboard, resize_keyboard=True)
+
+
+# ================= START =================
+
+def start(update, context):
     update.message.reply_text(
-        "🔥 *Power Combo Bot*\n\nChoose an option:",
-        reply_markup=reply_markup,
-        parse_mode="Markdown"
+        "🔥 POWER COMBO BOT 🔥\nChoose option:",
+        reply_markup=main_menu()
     )
 
 
-# =========================
-# BUTTON HANDLER
-# =========================
-def button(update: Update, context: CallbackContext):
-    query = update.callback_query
-    query.answer()
+# ================= MESSAGE HANDLER =================
 
-    if query.data == 'game':
-        keyboard = [
-            [InlineKeyboardButton("🤖 Play With AI", callback_data='ai_game')],
-            [InlineKeyboardButton("🔙 Back", callback_data='back')]
-        ]
-        query.edit_message_text(
-            "🎮 *Game Zone*\nChoose mode:",
-            reply_markup=InlineKeyboardMarkup(keyboard),
-            parse_mode="Markdown"
-        )
-
-    elif query.data == 'ai_game':
-        user_score = random.randint(1, 10)
-        ai_score = random.randint(1, 10)
-
-        if user_score > ai_score:
-            result = "🏆 You Win!"
-        elif user_score < ai_score:
-            result = "🤖 AI Wins!"
-        else:
-            result = "⚖ Draw!"
-
-        keyboard = [[InlineKeyboardButton("🔙 Back", callback_data='back')]]
-
-        query.edit_message_text(
-            f"🎲 Your Score: {user_score}\n🤖 AI Score: {ai_score}\n\n{result}",
-            reply_markup=InlineKeyboardMarkup(keyboard)
-        )
-
-    elif query.data == 'download':
-        keyboard = [[InlineKeyboardButton("🔙 Back", callback_data='back')]]
-        query.edit_message_text(
-            "📥 Send YouTube link to download.\n\n(Downloader system connect karna baki hai)",
-            reply_markup=InlineKeyboardMarkup(keyboard)
-        )
-
-    elif query.data == 'ott':
-        keyboard = [[InlineKeyboardButton("🔙 Back", callback_data='back')]]
-        query.edit_message_text(
-            "🎬 Send movie name to search OTT.\n\n(OTT API connect karna baki hai)",
-            reply_markup=InlineKeyboardMarkup(keyboard)
-        )
-
-    elif query.data == 'ai':
-        keyboard = [[InlineKeyboardButton("🔙 Back", callback_data='back')]]
-        query.edit_message_text(
-            "🤖 AI Mode Activated!\nAsk anything...",
-            reply_markup=InlineKeyboardMarkup(keyboard)
-        )
-
-    elif query.data == 'special':
-        keyboard = [[InlineKeyboardButton("🔙 Back", callback_data='back')]]
-        query.edit_message_text(
-            "🌐 Special Mode\nMini browser game coming soon 🚀",
-            reply_markup=InlineKeyboardMarkup(keyboard)
-        )
-
-    elif query.data == 'help':
-        keyboard = [[InlineKeyboardButton("🔙 Back", callback_data='back')]]
-        query.edit_message_text(
-            "❓ Help Menu\n\nUse /start to open main menu.",
-            reply_markup=InlineKeyboardMarkup(keyboard)
-        )
-
-    elif query.data == 'back':
-        keyboard = [
-            [InlineKeyboardButton("🎮 Game Zone", callback_data='game')],
-            [InlineKeyboardButton("📥 Downloader", callback_data='download')],
-            [InlineKeyboardButton("🎬 OTT Search", callback_data='ott')],
-            [InlineKeyboardButton("🤖 AI Mode", callback_data='ai')],
-            [InlineKeyboardButton("🌐 Special Mode", callback_data='special')],
-            [InlineKeyboardButton("❓ Help", callback_data='help')]
-        ]
-
-        query.edit_message_text(
-            "🔥 *Power Combo Bot*\n\nChoose an option:",
-            reply_markup=InlineKeyboardMarkup(keyboard),
-            parse_mode="Markdown"
-        )
-
-
-# =========================
-# MESSAGE HANDLER
-# =========================
-def handle_message(update: Update, context: CallbackContext):
+def handle_message(update, context):
     text = update.message.text.lower()
 
-    if "youtube.com" in text or "youtu.be" in text:
-        update.message.reply_text("📥 Downloader system not connected yet.")
+    # Greeting Auto Start
+    if text in ["hi", "hello", "hey", "hii"]:
+        start(update, context)
 
-    elif len(text) > 0:
-        update.message.reply_text(f"🤖 AI Reply:\nYou said: {text}")
+    # Special Mode
+    elif "special" in text:
+        game_button = InlineKeyboardMarkup([
+            [InlineKeyboardButton(
+                "🎮 Play Online Game",
+                web_app=WebAppInfo(url="https://google.com")
+            )]
+        ])
+        update.message.reply_text(
+            "🔥 Special Mode Activated!",
+            reply_markup=game_button
+        )
+
+    # YouTube
+    elif "youtube" in text:
+        update.message.reply_text(
+            "📥 Send YouTube link.\nChoose:\n🎥 Video\n🎵 Audio"
+        )
+
+    # Audio Extract
+    elif "audio" in text:
+        update.message.reply_text(
+            "🎵 Send video link to extract audio."
+        )
+
+    # OTT Links
+    elif "ott" in text:
+        ott_buttons = InlineKeyboardMarkup([
+            [InlineKeyboardButton("🔥 Hotstar", url="https://www.hotstar.com")],
+            [InlineKeyboardButton("🎥 Zee5", url="https://www.zee5.com")],
+            [InlineKeyboardButton("📺 SonyLIV", url="https://www.sonyliv.com")],
+            [InlineKeyboardButton("🏏 Live Cricket", url="https://www.hotstar.com/in/sports/cricket")]
+        ])
+        update.message.reply_text(
+            "🎬 OTT Platforms:",
+            reply_markup=ott_buttons
+        )
+
+    # AI Chat
+    elif "ai" in text:
+        update.message.reply_text("🤖 AI Mode Activated! Ask me anything.")
+
+    # Help
+    elif "help" in text:
+        update.message.reply_text(
+            "👤 Developer: @mr.divakar00\n"
+            "📩 Instagram: mr.divakar00"
+        )
+
+    else:
+        update.message.reply_text(
+            "Type hi to open menu."
+        )
 
 
-# =========================
-# HANDLERS
-# =========================
+# ================= HANDLERS =================
+
 dp.add_handler(CommandHandler("start", start))
-dp.add_handler(CallbackQueryHandler(button))
 dp.add_handler(MessageHandler(Filters.text & ~Filters.command, handle_message))
 
-
-# =========================
-# RUN BOT
-# =========================
 updater.start_polling()
 updater.idle()
