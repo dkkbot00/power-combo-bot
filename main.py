@@ -1,72 +1,56 @@
-from telegram import Update, ReplyKeyboardMarkup
+import os
+from telegram import ReplyKeyboardMarkup, Update
 from telegram.ext import Updater, CommandHandler, MessageHandler, Filters, CallbackContext
-from config import BOT_TOKEN, ADMIN_ID
-from database import add_user, get_total_users
+
+TOKEN = os.getenv("TOKEN")
+
+updater = Updater(TOKEN, use_context=True)
+dp = updater.dispatcher
 
 
-updater = Updater(BOT_TOKEN, use_context=True)
-dispatcher = updater.dispatcher
-
-
-# ===== MENU =====
-menu = ReplyKeyboardMarkup(
-    [
+# ================= MENU =================
+def start(update: Update, context: CallbackContext):
+    keyboard = [
         ["🎮 Special Mode", "📥 YouTube"],
         ["🎵 Audio Extract", "🎬 OTT"],
         ["🤖 AI Chat", "❓ Help"]
-    ],
-    resize_keyboard=True
-)
+    ]
+
+    reply_markup = ReplyKeyboardMarkup(keyboard, resize_keyboard=True)
+    update.message.reply_text("🔥 Welcome to Power Combo Bot\nSelect option:", reply_markup=reply_markup)
 
 
-# ===== START =====
-def start(update: Update, context: CallbackContext):
-    user = update.effective_user
+# ================= BUTTON HANDLER =================
+def handle_buttons(update: Update, context: CallbackContext):
+    text = update.message.text
 
-    add_user(user.id, user.username)
+    if text == "🎮 Special Mode":
+        update.message.reply_text("🎮 Play Game:\nhttps://power-game-production.up.railway.app")
 
-    update.message.reply_text(
-        "🔥 POWER COMBO BOT 🔥\n\nSelect option:",
-        reply_markup=menu
-    )
+    elif text == "📥 YouTube":
+        update.message.reply_text("📥 Send YouTube link to download.")
 
+    elif text == "🎵 Audio Extract":
+        update.message.reply_text("🎵 Send video link to extract audio.")
 
-# ===== ADMIN COMMAND =====
-def users(update: Update, context: CallbackContext):
-    if update.effective_user.id == ADMIN_ID:
-        total = get_total_users()
-        update.message.reply_text(f"👥 Total Users: {total}")
-    else:
-        update.message.reply_text("❌ Unauthorized")
+    elif text == "🎬 OTT":
+        update.message.reply_text("🎬 OTT Links:\nHotstar\nZee5\nSonyLiv\nLive Cricket")
 
+    elif text == "🤖 AI Chat":
+        update.message.reply_text("🤖 AI Mode Activated. Ask anything.")
 
-# ===== MESSAGE HANDLER =====
-def handle_message(update: Update, context: CallbackContext):
-    text = update.message.text.lower()
-
-    if text in ["hi", "hello", "hey"]:
-        start(update, context)
-
-    elif "special" in text:
-        update.message.reply_text(
-            "🎮 Play Game:\nhttps://power-game-production.up.railway.app"
-        )
-
-    elif "help" in text:
-        update.message.reply_text(
-            "👤 Developer: mr.divakar00"
-        )
+    elif text == "❓ Help":
+        update.message.reply_text("👤 Developer: mr.divakar00")
 
     else:
-        update.message.reply_text("Use menu options.")
+        update.message.reply_text("Use menu buttons only.")
 
 
-# ===== HANDLERS =====
-dispatcher.add_handler(CommandHandler("start", start))
-dispatcher.add_handler(CommandHandler("users", users))
-dispatcher.add_handler(MessageHandler(Filters.text & ~Filters.command, handle_message))
+# ================= HANDLERS =================
+dp.add_handler(CommandHandler("start", start))
+dp.add_handler(MessageHandler(Filters.text & ~Filters.command, handle_buttons))
 
 
-# ===== RUN =====
+# ================= RUN =================
 updater.start_polling()
 updater.idle()
