@@ -1,78 +1,153 @@
 import os
-from telegram import Update, ReplyKeyboardMarkup
-from telegram.ext import Updater, CommandHandler, MessageHandler, Filters, CallbackContext
+import asyncio
+from telegram import (
+    Update,
+    ReplyKeyboardMarkup,
+)
+from telegram.ext import (
+    ApplicationBuilder,
+    CommandHandler,
+    MessageHandler,
+    ContextTypes,
+    filters,
+)
+import yt_dlp
 
-TOKEN = os.getenv("BOT_TOKEN")
-ADMIN_ID = 5238180335   # 👈 Yaha apna Telegram ID daalo
+# ================= CONFIG ================= #
 
-# Menu
-menu_keyboard = [
-    ["🎮 Special Mode", "📥 YouTube"],
-    ["🎵 Audio Extract", "🎬 OTT"],
-    ["🤖 AI Chat", "❓ Help"]
-]
+BOT_TOKEN = os.getenv("BOT_TOKEN")
+ADMIN_ID = 5238180335   # 👈 Apna Telegram user ID daalo
 
-reply_markup = ReplyKeyboardMarkup(menu_keyboard, resize_keyboard=True)
+# ================= MENU ================= #
 
-# Notify admin
-def notify_admin(update: Update, context: CallbackContext):
-    user = update.message.from_user
-    message = f"""
-🚀 New User Activity
+def main_menu():
+    keyboard = [
+        ["📥 YouTube Info", "🎵 Audio Extract"],
+        ["🎬 OTT Links", "🎮 Special Mode"],
+        ["❓ Help"]
+    ]
+    return ReplyKeyboardMarkup(keyboard, resize_keyboard=True)
 
-👤 Name: {user.first_name}
-🔗 Username: @{user.username}
-🆔 ID: {user.id}
-💬 Message: {update.message.text}
-"""
-    context.bot.send_message(chat_id=ADMIN_ID, text=message)
+# ================= START ================= #
 
-# Start
-def start(update: Update, context: CallbackContext):
-    update.message.reply_text("Welcome! Use menu options.", reply_markup=reply_markup)
-    notify_admin(update, context)
+async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    user = update.effective_user
 
-# Menu Handler
-def handle_message(update: Update, context: CallbackContext):
-    text = update.message.text
+    # Admin log
+    await context.bot.send_message(
+        chat_id=ADMIN_ID,
+        text=f"👤 New User:\nName: {user.first_name}\nUsername: @{user.username}\nID: {user.id}"
+    )
 
-    notify_admin(update, context)
+    await update.message.reply_text(
+        "🔥 Welcome to Power Combo Bot 🔥\n\nSelect option below 👇",
+        reply_markup=main_menu()
+    )
 
-    if text == "🎮 Special Mode":
-        update.message.reply_text("🎮 Play Game:\nhttps://power-game-production.up.railway.app")
+# ================= HELP ================= #
 
-    elif text == "📥 YouTube":
-        update.message.reply_text("Send YouTube link.")
+async def help_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await update.message.reply_text(
+        "📩 Contact Insta: mr.divakar00\nAdmin: @Mr_anssh00"
+    )
 
-    elif text == "🎵 Audio Extract":
-        update.message.reply_text("Send video link to extract audio.")
+# ================= OTT ================= #
 
-    elif text == "🎬 OTT":
-        update.message.reply_text(
-            "Hotstar: https://www.hotstar.com\n"
-            "Zee5: https://www.zee5.com\n"
-            "SonyLiv: https://www.sonyliv.com\n"
-            "Live Cricket: https://www.hotstar.com/sports"
+async def ott_links(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await update.message.reply_text(
+        "🎬 Official OTT Platforms:\n\n"
+        "🔥 Hotstar:\nhttps://www.hotstar.com\n\n"
+        "🎥 Zee5:\nhttps://www.zee5.com\n\n"
+        "📺 SonyLIV:\nhttps://www.sonyliv.com\n\n"
+        "🏏 Cricket Live:\nhttps://www.hotstar.com/in/sports/cricket"
+    )
+
+# ================= SPECIAL MODE ================= #
+
+async def special_mode(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await update.message.reply_text(
+        "🎮 Play Power Game Here:\n"
+        "https://power-game-production.up.railway.app"
+    )
+
+# ================= YOUTUBE INFO ================= #
+
+async def youtube_info(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await update.message.reply_text("📥 Send YouTube link.")
+
+async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    text = update.message.text.lower()
+
+    # Auto start if hi/hello
+    if text in ["hi", "hello", "hey", "hii"]:
+        await update.message.reply_text(
+            "🔥 Welcome Back!\nChoose option 👇",
+            reply_markup=main_menu()
         )
+        return
 
-    elif text == "🤖 AI Chat":
-        update.message.reply_text("AI Mode Activated. Ask anything.")
+    # If link detected
+    if text.startswith("http"):
+        await update.message.reply_text("🔎 Fetching video info...")
 
-    elif text == "❓ Help":
-        update.message.reply_text("Developer: mr.divakar00")
+        try:
+            ydl_opts = {'quiet': True}
+            with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+                info = ydl.extract_info(text, download=False)
 
-    else:
-        update.message.reply_text("Use menu buttons only.")
+                title = info.get("title", "Unknown")
+                duration = info.get("duration", 0)
 
-def main():
-    updater = Updater(TOKEN, use_context=True)
-    dp = updater.dispatcher
+            await asyncio.sleep(1.5)
 
-    dp.add_handler(CommandHandler("start", start))
-    dp.add_handler(MessageHandler(Filters.text & ~Filters.command, handle_message))
+            await update.message.reply_text(
+                f"🎬 Title: {title}\n⏱ Duration: {duration} sec"
+            )
 
-    updater.start_polling()
-    updater.idle()
+        except Exception:
+            await update.message.reply_text(
+                "❌ Sorry bhai, link process nahi ho paya."
+            )
 
-if __name__ == "__main__":
-    main()
+        return
+
+    # Default
+    await update.message.reply_text(
+        "⚡ Please select option from menu.",
+        reply_markup=main_menu()
+    )
+
+# ================= AUDIO EXTRACT ================= #
+
+async def audio_extract(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await update.message.reply_text(
+        "🎵 Send video file to extract audio."
+    )
+
+async def handle_video(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    video = await update.message.video.get_file()
+    await video.download_to_drive("video.mp4")
+
+    await update.message.reply_text("🔄 Extracting audio...")
+
+    os.system("ffmpeg -i video.mp4 -vn -ab 192k audio.mp3")
+
+    await update.message.reply_audio(audio=open("audio.mp3", "rb"))
+
+# ================= MAIN ================= #
+
+app = ApplicationBuilder().token(BOT_TOKEN).build()
+
+app.add_handler(CommandHandler("start", start))
+app.add_handler(CommandHandler("help", help_cmd))
+
+app.add_handler(MessageHandler(filters.Regex("📥 YouTube Info"), youtube_info))
+app.add_handler(MessageHandler(filters.Regex("🎵 Audio Extract"), audio_extract))
+app.add_handler(MessageHandler(filters.Regex("🎬 OTT Links"), ott_links))
+app.add_handler(MessageHandler(filters.Regex("🎮 Special Mode"), special_mode))
+
+app.add_handler(MessageHandler(filters.VIDEO, handle_video))
+app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_text))
+
+print("Bot running...")
+app.run_polling()
