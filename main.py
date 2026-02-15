@@ -1,14 +1,28 @@
 import os
 from telegram.ext import Updater, CommandHandler
+import time
 
-TOKEN = os.getenv("BOT_TOKEN")
+while True:
+    try:
+        TOKEN = os.getenv("BOT_TOKEN")
 
-def start(update, context):
-    update.message.reply_text("Bot is working 🚀")
+        if not TOKEN:
+            print("BOT_TOKEN missing!")
+            time.sleep(5)
+            continue
 
-updater = Updater(TOKEN, use_context=True)
-dp = updater.dispatcher
-dp.add_handler(CommandHandler("start", start))
+        updater = Updater(TOKEN, use_context=True)
 
-updater.start_polling()
-updater.idle()
+        def start(update, context):
+            update.message.reply_text("Bot is working!")
+
+        dp = updater.dispatcher
+        dp.add_handler(CommandHandler("start", start))
+
+        print("Bot running...")
+        updater.start_polling()
+        updater.idle()
+
+    except Exception as e:
+        print("Error:", e)
+        time.sleep(5)
