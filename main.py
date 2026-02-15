@@ -50,7 +50,7 @@ def handle_message(update, context):
         game_button = InlineKeyboardMarkup([
             [InlineKeyboardButton(
                 "🎮 Play Online Game",
-                web_app=WebAppInfo(url="https://google.com")
+                web_app=WebAppInfo(url="power-game-production.up.railway.app")
             )]
         ])
         update.message.reply_text(
