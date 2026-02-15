@@ -1,96 +1,83 @@
-import os
+    import os
 from telegram import Update, ReplyKeyboardMarkup
 from telegram.ext import Updater, CommandHandler, MessageHandler, Filters, CallbackContext
 
-TOKEN = os.getenv("BOT_TOKEN")
+# ================= CONFIG =================
+BOT_TOKEN = os.getenv("BOT_TOKEN")
 
-if not TOKEN:
-    print("❌ BOT_TOKEN not found")
+# ⚠️ Abhi temporarily 0 rakha hai
+# /getid se apna ID nikaal ke yaha daalna
+ADMIN_ID = 0
+
+if not BOT_TOKEN:
+    print("❌ BOT_TOKEN missing")
     exit()
 
-updater = Updater(TOKEN, use_context=True)
+updater = Updater(BOT_TOKEN, use_context=True)
 dispatcher = updater.dispatcher
 
 
-# 🔥 MAIN MENU
-main_menu = ReplyKeyboardMarkup(
+# ================= MENU =================
+menu = ReplyKeyboardMarkup(
     [
-        ["🎮 Special Mode", "📥 YouTube Download"],
-        ["🎵 Audio Extract", "🎬 OTT Search"],
+        ["🎮 Special Mode", "📥 YouTube"],
+        ["🎵 Audio Extract", "🎬 OTT"],
         ["🤖 AI Chat", "❓ Help"]
     ],
     resize_keyboard=True
 )
 
 
-# ✅ START COMMAND
+# ================= START =================
 def start(update: Update, context: CallbackContext):
     update.message.reply_text(
-        "🔥 Welcome to POWER COMBO BOT 🔥\n\nSelect an option:",
-        reply_markup=main_menu
+        "🔥 POWER COMBO BOT 🔥\n\nSelect option:",
+        reply_markup=menu
     )
 
 
-# ✅ AUTO START ON HI HELLO
-def auto_start(update: Update, context: CallbackContext):
-    text = update.message.text.lower()
-    if text in ["hi", "hello", "hey", "hii"]:
-        start(update, context)
+# ================= GET ID =================
+def getid(update: Update, context: CallbackContext):
+    user = update.effective_user
+    update.message.reply_text(f"🆔 Your Telegram ID:\n{user.id}")
+
+
+# ================= USERS (ADMIN ONLY) =================
+def users(update: Update, context: CallbackContext):
+    if update.effective_user.id == ADMIN_ID:
+        update.message.reply_text("👑 Admin access granted.\n(User system coming next phase)")
     else:
-        handle_message(update, context)
+        update.message.reply_text("❌ You are not admin.")
 
 
-# ✅ MESSAGE HANDLER
+# ================= MESSAGE HANDLER =================
 def handle_message(update: Update, context: CallbackContext):
-    text = update.message.text
+    text = update.message.text.lower()
 
-    if text == "🎮 Special Mode":
+    if text in ["hi", "hello", "hey"]:
+        start(update, context)
+
+    elif "special" in text:
         update.message.reply_text(
-            "🎮 POWER GAME MODE\n\nClick below to play:\n\n"
-            "👉 https://power-game-production.up.railway.app"
+            "🎮 Play Game:\nhttps://power-game-production.up.railway.app"
         )
 
-    elif text == "📥 YouTube Download":
+    elif "help" in text:
         update.message.reply_text(
-            "📥 Send YouTube video link to download."
-        )
-
-    elif text == "🎵 Audio Extract":
-        update.message.reply_text(
-            "🎵 Send YouTube link to extract MP3."
-        )
-
-    elif text == "🎬 OTT Search":
-        update.message.reply_text(
-            "🎬 OTT Platforms:\n\n"
-            "🔥 Hotstar: https://www.hotstar.com\n"
-            "🎥 Zee5: https://www.zee5.com\n"
-            "📺 SonyLiv: https://www.sonyliv.com\n"
-            "🏏 Live Cricket: https://www.hotstar.com/in/sports/cricket"
-        )
-
-    elif text == "🤖 AI Chat":
-        update.message.reply_text(
-            "🤖 AI Mode Active\n\nType anything..."
-        )
-
-    elif text == "❓ Help":
-        update.message.reply_text(
-            "📞 Help & Support\n\nInstagram: mr.divakar00"
+            "👤 Developer: mr.divakar00"
         )
 
     else:
-        update.message.reply_text(
-            "❓ Please select from menu.",
-            reply_markup=main_menu
-        )
+        update.message.reply_text("Use menu options.")
 
 
-# 🔥 HANDLERS
+# ================= HANDLERS =================
 dispatcher.add_handler(CommandHandler("start", start))
-dispatcher.add_handler(MessageHandler(Filters.text & ~Filters.command, auto_start))
+dispatcher.add_handler(CommandHandler("getid", getid))
+dispatcher.add_handler(CommandHandler("users", users))
+dispatcher.add_handler(MessageHandler(Filters.text & ~Filters.command, handle_message))
 
 
-# 🚀 RUN BOT
+# ================= RUN =================
 updater.start_polling()
 updater.idle()
